@@ -2118,8 +2118,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -0.0000076294, y: 6.2}
-  m_SizeDelta: {x: 333.1, y: 71.754}
+  m_AnchoredPosition: {x: 0.000032425, y: -0.00000047684}
+  m_SizeDelta: {x: 369.875, y: 71.754}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &462687225
 MonoBehaviour:
@@ -2143,8 +2143,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Leaderboard
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: cf10e8d05809a614faf0db67272319df, type: 2}
+  m_sharedMaterial: {fileID: 7384226335671578, guid: cf10e8d05809a614faf0db67272319df, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -4090,7 +4090,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.10101116, g: 0.5849056, b: 0.09656459, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -4663,8 +4663,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -0.0000095367, y: 6.169}
-  m_SizeDelta: {x: 260.853, y: 71.754}
+  m_AnchoredPosition: {x: -0.0000095367, y: -0.573}
+  m_SizeDelta: {x: 260.853, y: 58.27}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1079538627
 MonoBehaviour:
@@ -4688,8 +4688,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Start
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: cf10e8d05809a614faf0db67272319df, type: 2}
+  m_sharedMaterial: {fileID: 7384226335671578, guid: cf10e8d05809a614faf0db67272319df, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -5310,8 +5310,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0.0000048269, y: 8.5}
-  m_SizeDelta: {x: 333.1, y: 71.754}
+  m_AnchoredPosition: {x: 0.0000048269, y: -0.888}
+  m_SizeDelta: {x: 333.1, y: 52.978}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1310114777
 MonoBehaviour:
@@ -5335,8 +5335,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Quit
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: cf10e8d05809a614faf0db67272319df, type: 2}
+  m_sharedMaterial: {fileID: 7384226335671578, guid: cf10e8d05809a614faf0db67272319df, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -5842,6 +5842,22 @@ MonoBehaviour:
         - m_Target: {fileID: 1404998561}
           m_TargetAssemblyTypeName: DiceAnimatorScript, Assembly-CSharp
           m_MethodName: StoplDice
+          m_Mode: 1
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 0
+          m_CallState: 2
+  - eventID: 3
+    callback:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 1404998561}
+          m_TargetAssemblyTypeName: DiceAnimatorScript, Assembly-CSharp
+          m_MethodName: RollDice
           m_Mode: 1
           m_Arguments:
             m_ObjectArgument: {fileID: 0}
@@ -7597,8 +7613,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4279862272
-  m_fontColor: {r: 0, g: 0.5169811, b: 0.0986152, a: 1}
+    rgba: 4294967295
+  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
   m_enableVertexGradient: 1
   m_colorMode: 3
   m_fontColorGradient:
@@ -7701,8 +7717,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0.0000048269, y: 4.4242}
-  m_SizeDelta: {x: 260.853, y: 71.754}
+  m_AnchoredPosition: {x: 0.0000048269, y: -4.157}
+  m_SizeDelta: {x: 260.853, y: 54.592}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1848949443
 MonoBehaviour:
@@ -7726,8 +7742,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Settings
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: cf10e8d05809a614faf0db67272319df, type: 2}
+  m_sharedMaterial: {fileID: 7384226335671578, guid: cf10e8d05809a614faf0db67272319df, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
