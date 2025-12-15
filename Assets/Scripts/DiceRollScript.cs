@@ -3,13 +3,25 @@ using UnityEngine;
 public class DiceRollScript : MonoBehaviour
 {
     Rigidbody rBody;
-    Vector3 position, startPosition;
+    Vector3 startPosition;
 
-    [SerializeField] private float maxRandForcVal, startRollingForce;
+    [Header("Roll Settings")]
+    [SerializeField] private float maxRandForcVal = 20f;
+    [SerializeField] private float startRollingForce = 900f;
+
+    [Header("Safety")]
+    [SerializeField] private float rollTimeout = 5f;
+
     float forceX, forceY, forceZ;
-    public string diceFaceNum;
+    float rollTimer = 0f;
+    bool isRolling = false;
+
+    public string diceFaceNum = "?";
     public bool isLanded = false;
     public bool firstThrow = false;
+
+    [HideInInspector] public bool inputEnabled = true;
+    [HideInInspector] public bool rolledThisTurn = false;
 
     void Awake()
     {
@@ -17,52 +29,108 @@ public class DiceRollScript : MonoBehaviour
         Initialize();
     }
 
-    private void Initialize()
+    void Initialize()
     {
         rBody = GetComponent<Rigidbody>();
         rBody.isKinematic = true;
-        position = transform.position;
-        transform.rotation = new Quaternion(
-            Random.Range(0, 360), Random.Range(0, 360), Random.Range(0, 360), 0);
+        transform.rotation = Random.rotation;
     }
 
     void RollDice()
     {
         rBody.isKinematic = false;
-        forceX = Random.Range(0, maxRandForcVal);
-        forceY = Random.Range(0, maxRandForcVal);
-        forceZ = Random.Range(0, maxRandForcVal);
-        rBody.AddForce(Vector3.up * Random.Range(800, startRollingForce));
+
+        forceX = Random.Range(0f, maxRandForcVal);
+        forceY = Random.Range(0f, maxRandForcVal);
+        forceZ = Random.Range(0f, maxRandForcVal);
+
+        rBody.AddForce(Vector3.up * Random.Range(800f, startRollingForce));
         rBody.AddTorque(forceX, forceY, forceZ);
+
+        rollTimer = 0f;
+        isRolling = true;
+
+        Debug.Log("[Dice] Roll started");
     }
+
+    public void RollFromManager()
+    {
+        if ((isLanded || !firstThrow) && !rolledThisTurn)
+        {
+            if (!firstThrow) firstThrow = true;
+
+            rolledThisTurn = true;
+            isLanded = false;
+            diceFaceNum = "?";
+
+            RollDice();
+        }
+    }
+
     public void ResetDice()
     {
+        if (rBody == null) rBody = GetComponent<Rigidbody>();
+
         transform.position = startPosition;
+
+        rBody.isKinematic = true;
+
+        rBody.linearVelocity = Vector3.zero;
+        rBody.angularVelocity = Vector3.zero;
+
+        isRolling = false;
+        rollTimer = 0f;
+
         firstThrow = false;
+
         isLanded = false;
-        Initialize();
+        rolledThisTurn = false;
+        diceFaceNum = "?";
+
+        transform.rotation = Random.rotation;
+
+        Debug.Log("[Dice] Reset (firstThrow=false, rolledThisTurn=false)");
     }
 
     void Update()
     {
-        if (rBody != null)
+        if (rBody == null) return;
+
+        if (inputEnabled &&
+            Input.GetMouseButtonDown(0) &&
+            (isLanded || !firstThrow) &&
+            !rolledThisTurn)
         {
-            if (Input.GetMouseButtonDown(0) && isLanded || Input.GetMouseButtonDown(0) & !firstThrow)
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            if (Physics.Raycast(ray, out RaycastHit hit) &&
+                hit.collider != null &&
+                hit.collider.gameObject == gameObject)
             {
-                Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-                RaycastHit hit;
-                if (Physics.Raycast(ray, out hit))
-                {
-                    if (hit.collider != null && hit.collider.gameObject == this.gameObject)
-                    {
-                        if (!firstThrow)
-                        {
-                            firstThrow = true;
-                        }
-                        RollDice();
-                    }
-                }
+                if (!firstThrow) firstThrow = true;
+
+                rolledThisTurn = true;
+                isLanded = false;
+                diceFaceNum = "?";
+
+                RollDice();
             }
+        }
+
+        if (isRolling && !isLanded)
+        {
+            rollTimer += Time.deltaTime;
+
+            if (rollTimer >= rollTimeout)
+            {
+                Debug.LogWarning("[Dice] Roll timeout → force reset");
+                isLanded = true;
+                ResetDice();
+            }
+        }
+
+        if (isLanded)
+        {
+            isRolling = false;
         }
     }
 }

@@ -21,10 +21,8 @@ public class SceneChanger : MonoBehaviour
             PlayerPrefs.DeleteAll();
 
 #if UNITY_EDITOR
-            // Выходим из Play Mode в редакторе
             UnityEditor.EditorApplication.isPlaying = false;
 #else
-        // Выходим из игры в билде
         Application.Quit();
 #endif
         }

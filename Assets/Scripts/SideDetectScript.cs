@@ -13,7 +13,7 @@ public class SideDetectScript : MonoBehaviour
     {
         if (diceRollScript == null) return;
 
-        if (diceRollScript.GetComponent<Rigidbody>().linearVelocity == Vector3.zero)
+        if (diceRollScript.GetComponent<Rigidbody>().linearVelocity.sqrMagnitude < 0.0001f)
         {
             diceRollScript.isLanded = true;
 

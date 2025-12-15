@@ -188,6 +188,7 @@ GameObject:
   - component: {fileID: 3431132136170971574}
   - component: {fileID: 112384189291199112}
   - component: {fileID: 6984358415813560579}
+  - component: {fileID: -869712345462721813}
   m_Layer: 0
   m_Name: EvilGirl2
   m_TagString: Untagged
@@ -300,3 +301,17 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &-869712345462721813
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7484937729841168100}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 957783eec1689af4db82fba185e90b9b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  positionOffset: {x: 0, y: 2, z: 0}
+  moveSpeed: 6

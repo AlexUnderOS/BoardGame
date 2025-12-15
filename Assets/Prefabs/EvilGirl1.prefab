@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 7601213871201252495}
   - component: {fileID: 8502139291163695727}
   - component: {fileID: 1601900313232442652}
+  - component: {fileID: 1859028019594161179}
   m_Layer: 0
   m_Name: EvilGirl1
   m_TagString: Untagged
@@ -124,6 +125,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c5f288d8857a0344a90a2314ed3afd13, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &1859028019594161179
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2668236283149536651}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 957783eec1689af4db82fba185e90b9b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  positionOffset: {x: 0, y: 2, z: 0}
+  moveSpeed: 6
 --- !u!1 &7457539822176016662
 GameObject:
   m_ObjectHideFlags: 0

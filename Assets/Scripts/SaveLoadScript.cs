@@ -11,7 +11,6 @@ public class SaveLoadScript : MonoBehaviour
     {
         public int character;
         public String characterName;
-        // Add other game data fields here
     }
 
     private GameData gameData = new GameData();
@@ -29,7 +28,8 @@ public class SaveLoadScript : MonoBehaviour
     {
         string filePath = Application.persistentDataPath + "/" + saveFileName;
 
-        if (File.Exists(filePath)) { 
+        if (File.Exists(filePath))
+        {
             string json = File.ReadAllText(filePath);
             gameData = JsonUtility.FromJson<GameData>(json);
         }
@@ -37,6 +37,10 @@ public class SaveLoadScript : MonoBehaviour
         {
             Debug.LogWarning("Save file not found: " + filePath);
         }
-        
+
     }
+
+    public int GetLoadedCharacterIndex() => gameData.character;
+    public string GetLoadedCharacterName() => gameData.characterName;
+
 }
