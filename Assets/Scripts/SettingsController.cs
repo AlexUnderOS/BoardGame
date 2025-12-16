@@ -15,7 +15,6 @@ public class SettingsController : MonoBehaviour
     private Resolution[] resolutions;
     private int defaultResolutionIndex = 0;
 
-    // дефолты
     private const int DEFAULT_WIDTH = 1920;
     private const int DEFAULT_HEIGHT = 1080;
     private const float DEFAULT_VOLUME = 0.5f;
@@ -37,7 +36,6 @@ public class SettingsController : MonoBehaviour
 
     private void Start()
     {
-        // 1) –езолюции
         resolutions = Screen.resolutions;
         resolutionDropdown.ClearOptions();
 
@@ -52,20 +50,16 @@ public class SettingsController : MonoBehaviour
 
         resolutionDropdown.AddOptions(options);
 
-        // ищем индекс 1920x1080 (если нет Ч просто возьмЄм текущую)
         defaultResolutionIndex = FindDefaultResolutionIndex();
 
-        // 2) «агружаем / создаЄм настройки
         LoadSettings();
 
-        // подстраховка
         if (settings.resolutionIndex < 0 || settings.resolutionIndex >= resolutions.Length)
             settings.resolutionIndex = defaultResolutionIndex;
 
         if (settings.masterVolume < 0f || settings.masterVolume > 1f)
             settings.masterVolume = DEFAULT_VOLUME;
 
-        // 3) UI = значени€ из настроек
         resolutionDropdown.value = settings.resolutionIndex;
         resolutionDropdown.RefreshShownValue();
 
@@ -76,7 +70,6 @@ public class SettingsController : MonoBehaviour
 
         fullscreenToggle.isOn = settings.isFullscreen;
 
-        // 4) ѕримен€ем
         ApplyResolution(settings.resolutionIndex, settings.isFullscreen);
         ApplyVolume(settings.masterVolume);
         Screen.fullScreen = settings.isFullscreen;
@@ -98,12 +91,10 @@ public class SettingsController : MonoBehaviour
 
             if (r.width == DEFAULT_WIDTH && r.height == DEFAULT_HEIGHT)
             {
-                // нашли 1920x1080 Ц берЄм его
                 return i;
             }
         }
 
-        // если 1920x1080 нет Ц используем текущее системное
         return indexOfCurrent;
     }
 
@@ -131,7 +122,6 @@ public class SettingsController : MonoBehaviour
         SaveSettings();
     }
 
-    // === ѕрименение ===
 
     private void ApplyResolution(int index, bool fullscreen)
     {
@@ -146,7 +136,6 @@ public class SettingsController : MonoBehaviour
         AudioListener.volume = volume;
     }
 
-    // === Save / Load ===
 
     private void SaveSettings()
     {
@@ -166,7 +155,6 @@ public class SettingsController : MonoBehaviour
     {
         if (!File.Exists(SettingsPath))
         {
-            // файла нет Ц создаЄм дефолты
             settings.resolutionIndex = defaultResolutionIndex;
             settings.masterVolume = DEFAULT_VOLUME;
             settings.isFullscreen = DEFAULT_FULLSCREEN;

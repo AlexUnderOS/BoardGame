@@ -5,6 +5,8 @@ public class PauseMenuController : MonoBehaviour
 {
     public static bool IsPaused { get; private set; }
 
+    private const string SectionIndexKey = "MainMenuSectionIndex";
+
     [Header("UI")]
     public GameObject pauseMenuRoot;
 
@@ -12,10 +14,8 @@ public class PauseMenuController : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.Escape))
         {
-            if (IsPaused)
-                Resume();
-            else
-                Pause();
+            if (IsPaused) Resume();
+            else Pause();
         }
     }
 
@@ -23,34 +23,68 @@ public class PauseMenuController : MonoBehaviour
     {
         Time.timeScale = 0f;
         IsPaused = true;
-        pauseMenuRoot.SetActive(true);
+        if (pauseMenuRoot != null) pauseMenuRoot.SetActive(true);
     }
 
     public void Resume()
     {
         Time.timeScale = 1f;
         IsPaused = false;
-        pauseMenuRoot.SetActive(false);
+        if (pauseMenuRoot != null) pauseMenuRoot.SetActive(false);
     }
 
-    // ===== BUTTON ACTIONS =====
 
-    public void GoToMainMenu()
+    private void GoToMainMenuWithResume()
     {
+        var board = FindFirstObjectByType<BoardManager>();
+        if (board != null)
+            BoardSaveData.Save(board.CreateSaveForExternal());
+
+        GameResumeData.SetResumePoint(SceneManager.GetActiveScene().buildIndex);
+
         Time.timeScale = 1f;
         IsPaused = false;
         SceneManager.LoadScene("MainMenu");
     }
 
-    public void OpenLeaderboard()
+    private void GoToMainMenuNoResume()
     {
-        PlayerPrefs.SetString("MainMenuSection", "Leaderboard");
-        GoToMainMenu();
+        GameResumeData.ClearResumePoint();
+        BoardSaveData.Clear();
+
+        Time.timeScale = 1f;
+        IsPaused = false;
+        SceneManager.LoadScene("MainMenu");
     }
 
     public void OpenSettings()
     {
-        PlayerPrefs.SetString("MainMenuSection", "Settings");
-        GoToMainMenu();
+        PlayerPrefs.SetInt(SectionIndexKey, (int)MenuSection.Settings);
+        PlayerPrefs.Save();
+        GoToMainMenuWithResume();
+    }
+
+    public void OpenLeaderboard()
+    {
+        PlayerPrefs.SetInt(SectionIndexKey, (int)MenuSection.Leaderboard);
+        PlayerPrefs.Save();
+        GoToMainMenuWithResume();
+    }
+
+    public void OpenCharacters()
+    {
+        PlayerPrefs.SetInt(SectionIndexKey, (int)MenuSection.Characters);
+        PlayerPrefs.Save();
+        GoToMainMenuWithResume();
+    }
+
+    public void QuitAndClearContinue()
+    {
+        GoToMainMenuNoResume();
+    }
+
+    public void GoToMainMenu()
+    {
+        GoToMainMenuWithResume();
     }
 }

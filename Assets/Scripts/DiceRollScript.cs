@@ -2,8 +2,10 @@ using UnityEngine;
 
 public class DiceRollScript : MonoBehaviour
 {
-    Rigidbody rBody;
-    Vector3 startPosition;
+    private Rigidbody rBody;
+
+    [Header("Rest Point (where dice is reset/ready)")]
+    [SerializeField] private Transform restPoint;
 
     [Header("Roll Settings")]
     [SerializeField] private float maxRandForcVal = 20f;
@@ -12,9 +14,9 @@ public class DiceRollScript : MonoBehaviour
     [Header("Safety")]
     [SerializeField] private float rollTimeout = 5f;
 
-    float forceX, forceY, forceZ;
-    float rollTimer = 0f;
-    bool isRolling = false;
+    private float forceX, forceY, forceZ;
+    private float rollTimer = 0f;
+    private bool isRolling = false;
 
     public string diceFaceNum = "?";
     public bool isLanded = false;
@@ -23,20 +25,19 @@ public class DiceRollScript : MonoBehaviour
     [HideInInspector] public bool inputEnabled = true;
     [HideInInspector] public bool rolledThisTurn = false;
 
-    void Awake()
-    {
-        startPosition = transform.position;
-        Initialize();
-    }
-
-    void Initialize()
+    private void Awake()
     {
         rBody = GetComponent<Rigidbody>();
-        rBody.isKinematic = true;
-        transform.rotation = Random.rotation;
+
+        if (restPoint == null)
+        {
+            Debug.LogWarning("[Dice] restPoint is NOT assigned! Create an Empty on table and assign it.");
+        }
+
+        ForceReadyForNextRoll();
     }
 
-    void RollDice()
+    private void RollDice()
     {
         rBody.isKinematic = false;
 
@@ -55,23 +56,38 @@ public class DiceRollScript : MonoBehaviour
 
     public void RollFromManager()
     {
-        if ((isLanded || !firstThrow) && !rolledThisTurn)
+        bool canRoll = (isLanded || !firstThrow) && !rolledThisTurn && !isRolling;
+
+        if (!canRoll)
         {
-            if (!firstThrow) firstThrow = true;
-
-            rolledThisTurn = true;
-            isLanded = false;
-            diceFaceNum = "?";
-
-            RollDice();
+            Debug.Log($"[Dice] RollFromManager blocked: isLanded={isLanded}, firstThrow={firstThrow}, rolledThisTurn={rolledThisTurn}, isRolling={isRolling}");
+            return;
         }
+
+        firstThrow = true;
+        rolledThisTurn = true;
+
+        isLanded = false;
+        diceFaceNum = "?";
+
+        RollDice();
     }
 
     public void ResetDice()
     {
+        ForceReadyForNextRoll();
+        Debug.Log("[Dice] Reset");
+    }
+
+    public void ForceReadyForNextRoll()
+    {
         if (rBody == null) rBody = GetComponent<Rigidbody>();
 
-        transform.position = startPosition;
+        if (restPoint != null)
+        {
+            transform.position = restPoint.position;
+            transform.rotation = restPoint.rotation;
+        }
 
         rBody.isKinematic = true;
 
@@ -81,34 +97,32 @@ public class DiceRollScript : MonoBehaviour
         isRolling = false;
         rollTimer = 0f;
 
-        firstThrow = false;
-
-        isLanded = false;
+        isLanded = true;         
+        firstThrow = false;     
         rolledThisTurn = false;
         diceFaceNum = "?";
 
-        transform.rotation = Random.rotation;
-
-        Debug.Log("[Dice] Reset (firstThrow=false, rolledThisTurn=false)");
+        Debug.Log("[Dice] ForceReadyForNextRoll (landed=true, firstThrow=false)");
     }
 
-    void Update()
+    private void Update()
     {
         if (rBody == null) return;
 
         if (inputEnabled &&
             Input.GetMouseButtonDown(0) &&
             (isLanded || !firstThrow) &&
-            !rolledThisTurn)
+            !rolledThisTurn &&
+            !isRolling)
         {
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
             if (Physics.Raycast(ray, out RaycastHit hit) &&
                 hit.collider != null &&
                 hit.collider.gameObject == gameObject)
             {
-                if (!firstThrow) firstThrow = true;
-
+                firstThrow = true;
                 rolledThisTurn = true;
+
                 isLanded = false;
                 diceFaceNum = "?";
 
@@ -119,18 +133,13 @@ public class DiceRollScript : MonoBehaviour
         if (isRolling && !isLanded)
         {
             rollTimer += Time.deltaTime;
-
             if (rollTimer >= rollTimeout)
             {
-                Debug.LogWarning("[Dice] Roll timeout → force reset");
-                isLanded = true;
-                ResetDice();
+                Debug.LogWarning("[Dice] Roll timeout -> ForceReadyForNextRoll()");
+                ForceReadyForNextRoll();
             }
         }
 
-        if (isLanded)
-        {
-            isRolling = false;
-        }
+        if (isLanded) isRolling = false;
     }
 }

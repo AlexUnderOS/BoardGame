@@ -64,14 +64,67 @@ public class BoardManager : MonoBehaviour
     private int matchesPlayed = 0;
 
     private bool seriesFinished = false;
+    private bool leaderboardRecorded = false;
+
 
     private bool roundEndedThisMove = false;
     private bool lastMoveWasPlayer = false;
 
     private Coroutine restartRoutine;
+    public static BoardManager Instance { get; private set; }
+
+    private void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Debug.LogWarning("[Board] Duplicate BoardManager detected -> destroying this one");
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+    }
+
+    private void CleanupExistingTokens()
+    {
+        TokenMover[] movers = FindObjectsByType<TokenMover>(FindObjectsSortMode.None);
+
+        int count = 0;
+        foreach (var m in movers)
+        {
+            Destroy(m.gameObject);
+            count++;
+        }
+
+        if (count > 0)
+            Debug.LogWarning($"[Board] CleanupExistingTokens: destroyed {count} TokenMover objects");
+    }
+
 
     void Start()
     {
+        Time.timeScale = 1f;
+
+        SpawnCharacters_FromPlayerPrefs();
+
+        if (BoardSaveData.TryLoad(out var save))
+        {
+            Debug.Log("[Board] Save found -> applying");
+            ApplySave(save);
+
+            dice.ForceReadyForNextRoll();
+
+            decidingFirstTurn = false;
+            turnLocked = false;
+            StartTurn();
+        }
+        else
+        {
+            Debug.Log("[Board] No save -> new game");
+            SetupRandomBlueCells();
+            UpdateScoreUI();
+            StartCoroutine(FirstTurnRoutine_FirstMatchOnly());
+        }
+
         Debug.Log("[Board] Game start");
 
         if (winPanel != null) winPanel.SetActive(false);
@@ -87,6 +140,8 @@ public class BoardManager : MonoBehaviour
 
     void SpawnCharacters_FromPlayerPrefs()
     {
+        CleanupExistingTokens();
+
         int selectedIndex = PlayerPrefs.GetInt("SelectedCharacter", 0);
         selectedIndex = Mathf.Clamp(selectedIndex, 0, characterPrefabs.Length - 1);
 
@@ -118,6 +173,7 @@ public class BoardManager : MonoBehaviour
 
         Debug.Log("[Board] Characters spawned");
     }
+
 
     void SetupRandomBlueCells()
     {
@@ -209,6 +265,8 @@ public class BoardManager : MonoBehaviour
 
     void StartTurn()
     {
+        dice.ForceReadyForNextRoll();
+
         if (seriesFinished) return;
 
         turnLocked = false;
@@ -329,9 +387,8 @@ public class BoardManager : MonoBehaviour
 
         Debug.Log($"[Board] Score: {botName}={botScore}, {playerName}={playerScore} | matches={matchesPlayed}/{maxMatches}");
 
-        int needToWinSeries = (maxMatches / 2) + 1;
 
-        if (playerScore >= needToWinSeries || botScore >= needToWinSeries || matchesPlayed >= maxMatches)
+        if (playerScore >= maxMatches || botScore >= maxMatches || matchesPlayed >= maxMatches)
         {
             seriesFinished = true;
 
@@ -375,22 +432,113 @@ public class BoardManager : MonoBehaviour
 
         string resultText;
 
-        if (playerScore > botScore)
-            resultText = "You Win!";
-        else if (playerScore < botScore)
-            resultText = "You Lost!";
-        else
-            resultText = "Draw!";
+        if (playerScore > botScore) resultText = "You Win!";
+        else if (playerScore < botScore) resultText = "You Lost!";
+        else resultText = "Draw!";
 
         if (winPanelWinnerText != null)
             winPanelWinnerText.text = resultText;
 
         if (winPanelScoreText != null)
-            winPanelScoreText.text =
-                $"{playerName} - {playerScore}\n{botName} - {botScore}";
+            winPanelScoreText.text = $"{playerName} - {playerScore}\n{botName} - {botScore}";
+
+        if (playerScore > botScore) LeaderboardScript.AddPlayerWin();
+        else if (playerScore < botScore) LeaderboardScript.AddBotWin();
+        else LeaderboardScript.AddDraw();
 
         Debug.Log($"[Board] WinPanel shown: {resultText}");
     }
+
+
+
+    private BoardSaveData CreateSave()
+    {
+        return new BoardSaveData
+        {
+            playerIndex = player != null ? player.CurrentIndex : 0,
+            botIndex = bot != null ? bot.CurrentIndex : 0,
+
+            blueCells = blueCells,
+
+            playerTurn = playerTurn,
+
+            playerScore = playerScore,
+            botScore = botScore,
+            matchesPlayed = matchesPlayed,
+
+            playerName = playerName,
+            botName = botName,
+
+            diceFirstThrow = dice != null && dice.firstThrow,
+            diceRolledThisTurn = dice != null && dice.rolledThisTurn,
+            diceFaceNum = dice != null ? dice.diceFaceNum : "?"
+        };
+    }
+
+    private void ApplySave(BoardSaveData s)
+    {
+        if (s == null) return;
+
+        // restore names (если уже заспавнены)
+        playerName = string.IsNullOrWhiteSpace(s.playerName) ? playerName : s.playerName;
+        botName = string.IsNullOrWhiteSpace(s.botName) ? botName : s.botName;
+
+        // restore series
+        playerScore = s.playerScore;
+        botScore = s.botScore;
+        matchesPlayed = s.matchesPlayed;
+
+        // restore turn
+        playerTurn = s.playerTurn;
+
+        // restore blue cells
+        if (s.blueCells != null && s.blueCells.Length > 0)
+        {
+            blueCells = s.blueCells;
+            RefreshBlueCellMaterials();
+        }
+
+        int pIdx = Mathf.Clamp(s.playerIndex, 0, cells.Length - 1);
+        int bIdx = Mathf.Clamp(s.botIndex, 0, cells.Length - 1);
+
+        player.SetPosition(cells[pIdx], pIdx);
+        bot.SetPosition(cells[bIdx], bIdx);
+
+        if (dice != null)
+        {
+            dice.firstThrow = s.diceFirstThrow;
+            dice.rolledThisTurn = s.diceRolledThisTurn;
+            dice.diceFaceNum = string.IsNullOrEmpty(s.diceFaceNum) ? "?" : s.diceFaceNum;
+            dice.isLanded = false;
+        }
+
+        UpdateScoreUI();
+
+        Debug.Log($"[Save] Applied. pIdx={pIdx}, bIdx={bIdx}, turn={(playerTurn ? "PLAYER" : "BOT")}, score P={playerScore} B={botScore}");
+    }
+
+    private void RefreshBlueCellMaterials()
+    {
+        for (int i = 1; i < cells.Length - 1; i++)
+            SetCellMaterial(cells[i], defaultCellMaterial);
+
+        if (blueCells == null) return;
+
+        foreach (int idx in blueCells)
+        {
+            if (idx <= 0 || idx >= cells.Length - 1) continue;
+            SetCellMaterial(cells[idx], blueCellMaterial);
+        }
+
+        Debug.Log("[Board] Blue materials refreshed from save");
+    }
+
+    public BoardSaveData CreateSaveForExternal()
+    {
+        return CreateSave();
+    }
+
+
 
 
     void UpdateScoreUI()
@@ -409,6 +557,7 @@ public class BoardManager : MonoBehaviour
     {
         if (!playerTurn || !dice.inputEnabled || seriesFinished) return;
         Debug.Log("[UI] ResetDice clicked");
+
         dice.ResetDice();
     }
 
