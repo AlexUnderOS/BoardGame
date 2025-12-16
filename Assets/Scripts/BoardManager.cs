@@ -40,7 +40,10 @@ public class BoardManager : MonoBehaviour
     [SerializeField] private int maxMatches = 3;
     [SerializeField] private float roundRestartDelay = 1.2f;
 
-    // runtime
+    private const string BotLockedKey = "BotIdentityLocked";
+    private const string BotIndexKey = "BotCharacterIndex";
+    private const string BotNameKey  = "BotName";
+
     private TokenMover player;
     private TokenMover bot;
 
@@ -55,7 +58,6 @@ public class BoardManager : MonoBehaviour
 
     private List<string> namePool;
 
-    // score
     private string playerName;
     private string botName;
 
@@ -64,13 +66,12 @@ public class BoardManager : MonoBehaviour
     private int matchesPlayed = 0;
 
     private bool seriesFinished = false;
-    private bool leaderboardRecorded = false;
-
 
     private bool roundEndedThisMove = false;
     private bool lastMoveWasPlayer = false;
 
     private Coroutine restartRoutine;
+
     public static BoardManager Instance { get; private set; }
 
     private void Awake()
@@ -87,22 +88,15 @@ public class BoardManager : MonoBehaviour
     private void CleanupExistingTokens()
     {
         TokenMover[] movers = FindObjectsByType<TokenMover>(FindObjectsSortMode.None);
-
-        int count = 0;
-        foreach (var m in movers)
-        {
-            Destroy(m.gameObject);
-            count++;
-        }
-
-        if (count > 0)
-            Debug.LogWarning($"[Board] CleanupExistingTokens: destroyed {count} TokenMover objects");
+        foreach (var m in movers) Destroy(m.gameObject);
     }
 
-
-    void Start()
+    private void Start()
     {
         Time.timeScale = 1f;
+        if (winPanel != null) winPanel.SetActive(false);
+
+        namePool = LoadNamesFromResources("PlayerNames");
 
         SpawnCharacters_FromPlayerPrefs();
 
@@ -124,21 +118,18 @@ public class BoardManager : MonoBehaviour
             UpdateScoreUI();
             StartCoroutine(FirstTurnRoutine_FirstMatchOnly());
         }
-
-        Debug.Log("[Board] Game start");
-
-        if (winPanel != null) winPanel.SetActive(false);
-
-        namePool = LoadNamesFromResources("PlayerNames");
-
-        SpawnCharacters_FromPlayerPrefs();
-        SetupRandomBlueCells();
-        UpdateScoreUI();
-
-        StartCoroutine(FirstTurnRoutine_FirstMatchOnly());
     }
 
-    void SpawnCharacters_FromPlayerPrefs()
+    public static void ResetBotIdentityForNewGame()
+    {
+        PlayerPrefs.DeleteKey(BotIndexKey);
+        PlayerPrefs.DeleteKey(BotNameKey);
+        PlayerPrefs.SetInt(BotLockedKey, 0);
+        PlayerPrefs.Save();
+        Debug.Log("[Board] Bot identity reset for NEW GAME");
+    }
+
+    private void SpawnCharacters_FromPlayerPrefs()
     {
         CleanupExistingTokens();
 
@@ -148,21 +139,48 @@ public class BoardManager : MonoBehaviour
         playerName = PlayerPrefs.GetString("PlayerName", "Player");
         if (string.IsNullOrWhiteSpace(playerName)) playerName = "Player";
 
-        Debug.Log($"[Board] PlayerPrefs: index={selectedIndex}, name='{playerName}'");
-
         GameObject p = Instantiate(characterPrefabs[selectedIndex], playerSpawn.position, Quaternion.identity);
         player = p.GetComponent<TokenMover>();
         p.GetComponent<NameScript>()?.SetName(playerName);
 
-        int botIndex = Random.Range(0, characterPrefabs.Length);
-        if (characterPrefabs.Length > 1)
-            while (botIndex == selectedIndex)
-                botIndex = Random.Range(0, characterPrefabs.Length);
+        int botIndex;
+        bool botLocked = PlayerPrefs.GetInt(BotLockedKey, 0) == 1;
+
+        if (botLocked)
+        {
+            botIndex = PlayerPrefs.GetInt(BotIndexKey, 0);
+            botIndex = Mathf.Clamp(botIndex, 0, characterPrefabs.Length - 1);
+
+            botName = PlayerPrefs.GetString(BotNameKey, "Bot");
+            if (string.IsNullOrWhiteSpace(botName)) botName = "Bot";
+
+            if (characterPrefabs.Length > 1 && botIndex == selectedIndex)
+            {
+                botIndex = (botIndex + 1) % characterPrefabs.Length;
+                PlayerPrefs.SetInt(BotIndexKey, botIndex);
+                PlayerPrefs.Save();
+            }
+        }
+        else
+        {
+            botIndex = Random.Range(0, characterPrefabs.Length);
+            if (characterPrefabs.Length > 1)
+                while (botIndex == selectedIndex)
+                    botIndex = Random.Range(0, characterPrefabs.Length);
+
+            botName = GetRandomName();
+            if (string.IsNullOrWhiteSpace(botName)) botName = "Bot";
+
+            PlayerPrefs.SetInt(BotIndexKey, botIndex);
+            PlayerPrefs.SetString(BotNameKey, botName);
+            PlayerPrefs.SetInt(BotLockedKey, 1);
+            PlayerPrefs.Save();
+
+            Debug.Log($"[Board] Bot identity chosen: index={botIndex}, name='{botName}'");
+        }
 
         GameObject b = Instantiate(characterPrefabs[botIndex], botSpawn.position, Quaternion.identity);
         bot = b.GetComponent<TokenMover>();
-
-        botName = GetRandomName();
         b.GetComponent<NameScript>()?.SetName(botName);
 
         player.SetOffset(new Vector3(-1f, 1.3f, 0f));
@@ -170,12 +188,9 @@ public class BoardManager : MonoBehaviour
 
         player.SetPosition(cells[0], 0);
         bot.SetPosition(cells[0], 0);
-
-        Debug.Log("[Board] Characters spawned");
     }
 
-
-    void SetupRandomBlueCells()
+    private void SetupRandomBlueCells()
     {
         for (int i = 1; i < cells.Length - 1; i++)
             SetCellMaterial(cells[i], defaultCellMaterial);
@@ -195,18 +210,16 @@ public class BoardManager : MonoBehaviour
 
         foreach (int idx in blueCells)
             SetCellMaterial(cells[idx], blueCellMaterial);
-
-        Debug.Log("[Board] Blue cells: " + string.Join(", ", blueCells));
     }
 
-    void SetCellMaterial(Transform cell, Material mat)
+    private void SetCellMaterial(Transform cell, Material mat)
     {
         if (cell == null || mat == null) return;
         Renderer r = cell.GetComponent<Renderer>();
         if (r != null) r.material = mat;
     }
 
-    IEnumerator FirstTurnRoutine_FirstMatchOnly()
+    private IEnumerator FirstTurnRoutine_FirstMatchOnly()
     {
         if (seriesFinished) yield break;
 
@@ -214,22 +227,32 @@ public class BoardManager : MonoBehaviour
 
         decidingFirstTurn = true;
         turnLocked = true;
+
         dice.inputEnabled = false;
         SetResetButton(false);
-
-        Debug.Log("[Board] First match: decide who starts by dice");
 
         while (true)
         {
             PrepareDice();
-            yield return new WaitForSeconds(0.5f);
+            dice.ForceReadyForNextRollStateOnly();
+            yield return null;
+
+            dice.ResetDicePos();
+            yield return new WaitUntil(() => !dice.IsResettingPos);
+
+            yield return new WaitForSeconds(0.15f);
 
             dice.RollFromManager();
             yield return new WaitUntil(() => dice.isLanded);
             botStartRoll = ParseDice();
-            Debug.Log($"[Board] BOT start roll = {botStartRoll}");
 
             PrepareDice();
+            dice.ForceReadyForNextRollStateOnly();
+            yield return null;
+
+            dice.ResetDicePos();
+            yield return new WaitUntil(() => !dice.IsResettingPos);
+
             dice.inputEnabled = true;
             SetResetButton(true);
 
@@ -239,19 +262,15 @@ public class BoardManager : MonoBehaviour
             SetResetButton(false);
 
             playerStartRoll = ParseDice();
-            Debug.Log($"[Board] PLAYER start roll = {playerStartRoll}");
 
             if (playerStartRoll != botStartRoll)
             {
                 playerTurn = playerStartRoll > botStartRoll;
                 break;
             }
-
-            Debug.Log("[Board] Tie → reroll");
         }
 
         int firstSteps = playerTurn ? playerStartRoll : botStartRoll;
-        Debug.Log($"[Board] First mover: {(playerTurn ? "PLAYER" : "BOT")} steps={firstSteps}");
 
         decidingFirstTurn = false;
         yield return HandleMove(playerTurn ? player : bot, firstSteps);
@@ -263,12 +282,11 @@ public class BoardManager : MonoBehaviour
         StartTurn();
     }
 
-    void StartTurn()
+    private void StartTurn()
     {
-        dice.ForceReadyForNextRoll();
-
         if (seriesFinished) return;
 
+        dice.ForceReadyForNextRollStateOnly();
         turnLocked = false;
         decidingFirstTurn = false;
 
@@ -278,7 +296,6 @@ public class BoardManager : MonoBehaviour
         {
             dice.inputEnabled = true;
             SetResetButton(true);
-            Debug.Log("[Board] Player turn");
         }
         else
         {
@@ -288,7 +305,7 @@ public class BoardManager : MonoBehaviour
         }
     }
 
-    void Update()
+    private void Update()
     {
         if (seriesFinished || turnLocked || decidingFirstTurn) return;
 
@@ -299,13 +316,11 @@ public class BoardManager : MonoBehaviour
             SetResetButton(false);
 
             int roll = ParseDice();
-            Debug.Log($"[Board] Player rolled {roll}");
-
             StartCoroutine(PlayerMoveThenNext(roll));
         }
     }
 
-    IEnumerator PlayerMoveThenNext(int steps)
+    private IEnumerator PlayerMoveThenNext(int steps)
     {
         roundEndedThisMove = false;
 
@@ -318,11 +333,10 @@ public class BoardManager : MonoBehaviour
         StartTurn();
     }
 
-    IEnumerator BotTurn()
+    private IEnumerator BotTurn()
     {
         roundEndedThisMove = false;
 
-        Debug.Log("[Board] Bot turn: rolling...");
         yield return new WaitForSeconds(0.8f);
 
         dice.rolledThisTurn = false;
@@ -332,8 +346,6 @@ public class BoardManager : MonoBehaviour
         turnLocked = true;
 
         int roll = ParseDice();
-        Debug.Log($"[Board] Bot rolled {roll}");
-
         yield return HandleMove(bot, roll);
 
         if (seriesFinished || roundEndedThisMove) yield break;
@@ -343,7 +355,7 @@ public class BoardManager : MonoBehaviour
         StartTurn();
     }
 
-    IEnumerator HandleMove(TokenMover mover, int steps)
+    private IEnumerator HandleMove(TokenMover mover, int steps)
     {
         lastMoveWasPlayer = (mover == player);
 
@@ -354,7 +366,6 @@ public class BoardManager : MonoBehaviour
         if (IsBlue(idx))
         {
             int target = GetBlueTarget(idx);
-            Debug.Log($"[Board] BLUE {idx} → {target}");
             mover.SetPosition(cells[target], target);
             idx = target;
         }
@@ -362,12 +373,11 @@ public class BoardManager : MonoBehaviour
         if (idx >= cells.Length - 1)
         {
             bool playerWon = (mover == player);
-            Debug.Log($"[Board] ROUND WINNER: {(playerWon ? "PLAYER" : "BOT")}");
             OnRoundFinished(playerWon);
         }
     }
 
-    void OnRoundFinished(bool playerWon)
+    private void OnRoundFinished(bool playerWon)
     {
         if (seriesFinished) return;
 
@@ -375,6 +385,7 @@ public class BoardManager : MonoBehaviour
 
         turnLocked = true;
         decidingFirstTurn = true;
+
         dice.inputEnabled = false;
         SetResetButton(false);
 
@@ -385,15 +396,9 @@ public class BoardManager : MonoBehaviour
 
         UpdateScoreUI();
 
-        Debug.Log($"[Board] Score: {botName}={botScore}, {playerName}={playerScore} | matches={matchesPlayed}/{maxMatches}");
-
-
         if (playerScore >= maxMatches || botScore >= maxMatches || matchesPlayed >= maxMatches)
         {
             seriesFinished = true;
-
-            Debug.Log("[Board] SERIES FINISHED");
-
             ShowWinPanel();
             return;
         }
@@ -402,9 +407,8 @@ public class BoardManager : MonoBehaviour
         restartRoutine = StartCoroutine(RestartRoundCoroutine());
     }
 
-    IEnumerator RestartRoundCoroutine()
+    private IEnumerator RestartRoundCoroutine()
     {
-        Debug.Log("[Board] Restarting round...");
         yield return new WaitForSeconds(roundRestartDelay);
 
         player.SetPosition(cells[0], 0);
@@ -420,78 +424,39 @@ public class BoardManager : MonoBehaviour
         turnLocked = false;
         roundEndedThisMove = false;
 
-        Debug.Log($"[Board] New round start. Next turn: {(playerTurn ? "PLAYER" : "BOT")}");
-
         StartTurn();
     }
 
-    void ShowWinPanel()
+    private void ShowWinPanel()
     {
-        if (winPanel != null)
-            winPanel.SetActive(true);
+        if (winPanel != null) winPanel.SetActive(true);
 
         string resultText;
-
         if (playerScore > botScore) resultText = "You Win!";
         else if (playerScore < botScore) resultText = "You Lost!";
         else resultText = "Draw!";
 
-        if (winPanelWinnerText != null)
-            winPanelWinnerText.text = resultText;
-
-        if (winPanelScoreText != null)
-            winPanelScoreText.text = $"{playerName} - {playerScore}\n{botName} - {botScore}";
+        if (winPanelWinnerText != null) winPanelWinnerText.text = resultText;
+        if (winPanelScoreText != null) winPanelScoreText.text = $"{playerName} - {playerScore}\n{botName} - {botScore}";
 
         if (playerScore > botScore) LeaderboardScript.AddPlayerWin();
         else if (playerScore < botScore) LeaderboardScript.AddBotWin();
         else LeaderboardScript.AddDraw();
-
-        Debug.Log($"[Board] WinPanel shown: {resultText}");
-    }
-
-
-
-    private BoardSaveData CreateSave()
-    {
-        return new BoardSaveData
-        {
-            playerIndex = player != null ? player.CurrentIndex : 0,
-            botIndex = bot != null ? bot.CurrentIndex : 0,
-
-            blueCells = blueCells,
-
-            playerTurn = playerTurn,
-
-            playerScore = playerScore,
-            botScore = botScore,
-            matchesPlayed = matchesPlayed,
-
-            playerName = playerName,
-            botName = botName,
-
-            diceFirstThrow = dice != null && dice.firstThrow,
-            diceRolledThisTurn = dice != null && dice.rolledThisTurn,
-            diceFaceNum = dice != null ? dice.diceFaceNum : "?"
-        };
     }
 
     private void ApplySave(BoardSaveData s)
     {
         if (s == null) return;
 
-        // restore names (если уже заспавнены)
         playerName = string.IsNullOrWhiteSpace(s.playerName) ? playerName : s.playerName;
         botName = string.IsNullOrWhiteSpace(s.botName) ? botName : s.botName;
 
-        // restore series
         playerScore = s.playerScore;
         botScore = s.botScore;
         matchesPlayed = s.matchesPlayed;
 
-        // restore turn
         playerTurn = s.playerTurn;
 
-        // restore blue cells
         if (s.blueCells != null && s.blueCells.Length > 0)
         {
             blueCells = s.blueCells;
@@ -513,8 +478,6 @@ public class BoardManager : MonoBehaviour
         }
 
         UpdateScoreUI();
-
-        Debug.Log($"[Save] Applied. pIdx={pIdx}, bIdx={bIdx}, turn={(playerTurn ? "PLAYER" : "BOT")}, score P={playerScore} B={botScore}");
     }
 
     private void RefreshBlueCellMaterials()
@@ -529,51 +492,38 @@ public class BoardManager : MonoBehaviour
             if (idx <= 0 || idx >= cells.Length - 1) continue;
             SetCellMaterial(cells[idx], blueCellMaterial);
         }
-
-        Debug.Log("[Board] Blue materials refreshed from save");
     }
 
-    public BoardSaveData CreateSaveForExternal()
-    {
-        return CreateSave();
-    }
-
-
-
-
-    void UpdateScoreUI()
+    private void UpdateScoreUI()
     {
         if (scoreText == null) return;
         scoreText.text = $"{botName} - {botScore}\n{playerName} - {playerScore}";
     }
 
-    void SetResetButton(bool enabled)
+    private void SetResetButton(bool enabled)
     {
-        if (resetButton != null)
-            resetButton.interactable = enabled;
+        if (resetButton != null) resetButton.interactable = enabled;
     }
 
     public void ResetDiceFromUI()
     {
         if (!playerTurn || !dice.inputEnabled || seriesFinished) return;
-        Debug.Log("[UI] ResetDice clicked");
-
         dice.ResetDice();
     }
 
-    void PrepareDice()
+    private void PrepareDice()
     {
         dice.isLanded = false;
         dice.diceFaceNum = "?";
         dice.rolledThisTurn = false;
     }
 
-    int ParseDice()
+    private int ParseDice()
     {
         return int.TryParse(dice.diceFaceNum, out int v) ? Mathf.Clamp(v, 1, 6) : 1;
     }
 
-    bool IsBlue(int index)
+    private bool IsBlue(int index)
     {
         if (blueCells == null) return false;
         foreach (int b in blueCells)
@@ -581,7 +531,7 @@ public class BoardManager : MonoBehaviour
         return false;
     }
 
-    int GetBlueTarget(int index)
+    private int GetBlueTarget(int index)
     {
         int lastBlue = -1;
         foreach (int b in blueCells)
@@ -589,7 +539,7 @@ public class BoardManager : MonoBehaviour
         return lastBlue == -1 ? 0 : lastBlue;
     }
 
-    List<string> LoadNamesFromResources(string file)
+    private List<string> LoadNamesFromResources(string file)
     {
         List<string> list = new List<string>();
         TextAsset ta = Resources.Load<TextAsset>(file);
@@ -602,10 +552,38 @@ public class BoardManager : MonoBehaviour
         return list;
     }
 
-    string GetRandomName()
+    private string GetRandomName()
     {
         return (namePool != null && namePool.Count > 0)
             ? namePool[Random.Range(0, namePool.Count)]
             : "Bot_" + Random.Range(100, 999);
+    }
+
+    private BoardSaveData CreateSave()
+    {
+        return new BoardSaveData
+        {
+            playerIndex = player != null ? player.CurrentIndex : 0,
+            botIndex = bot != null ? bot.CurrentIndex : 0,
+
+            blueCells = blueCells,
+            playerTurn = playerTurn,
+
+            playerScore = playerScore,
+            botScore = botScore,
+            matchesPlayed = matchesPlayed,
+
+            playerName = playerName,
+            botName = botName,
+
+            diceFirstThrow = dice != null && dice.firstThrow,
+            diceRolledThisTurn = dice != null && dice.rolledThisTurn,
+            diceFaceNum = dice != null ? dice.diceFaceNum : "?"
+        };
+    }
+
+    public BoardSaveData CreateSaveForExternal()
+    {
+        return CreateSave();
     }
 }

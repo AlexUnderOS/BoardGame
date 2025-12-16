@@ -14,32 +14,29 @@ public class ChooseCharacterScript : MonoBehaviour
     {
         characterIndex = 0;
         foreach (GameObject character in characters)
-        {
             character.SetActive(false);
-        }
 
-        characters[characterIndex].SetActive(true);
+        if (characters.Length > 0)
+            characters[characterIndex].SetActive(true);
     }
 
     public void NextCharacter()
     {
+        if (characters.Length == 0) return;
+
         characters[characterIndex].SetActive(false);
         characterIndex++;
-        if (characterIndex == characters.Length)
-        {
-            characterIndex = 0;
-        }
+        if (characterIndex == characters.Length) characterIndex = 0;
         characters[characterIndex].SetActive(true);
     }
 
     public void PreviousCharacter()
     {
+        if (characters.Length == 0) return;
+
         characters[characterIndex].SetActive(false);
         characterIndex--;
-        if (characterIndex == -1)
-        {
-            characterIndex = characters.Length - 1;
-        }
+        if (characterIndex == -1) characterIndex = characters.Length - 1;
         characters[characterIndex].SetActive(true);
     }
 
@@ -49,9 +46,18 @@ public class ChooseCharacterScript : MonoBehaviour
 
         if (characterName.Length >= 3)
         {
+            // Save player selection
             PlayerPrefs.SetInt("SelectedCharacter", characterIndex);
             PlayerPrefs.SetString("PlayerName", characterName);
             PlayerPrefs.SetInt("PlayerCount", playerCount);
+
+            // ✅ NEW GAME START: force new random bot identity
+            PlayerPrefs.SetInt("BotIdentityLocked", 0);
+            PlayerPrefs.DeleteKey("BotCharacterIndex");
+            PlayerPrefs.DeleteKey("BotName");
+
+            PlayerPrefs.Save();
+
             StartCoroutine(sceneChanger.Delay("play", characterIndex, characterName));
         }
         else

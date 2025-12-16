@@ -1058,6 +1058,37 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 313185523}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &321356439
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 321356440}
+  m_Layer: 0
+  m_Name: resetpos
+  m_TagString: Untagged
+  m_Icon: {fileID: 7174288486110832750, guid: 0000000000000000d000000000000000, type: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &321356440
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 321356439}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.71, z: -18.66}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &338340609
 GameObject:
   m_ObjectHideFlags: 0
@@ -4499,10 +4530,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 73697690c602eb548be2f23a4ffcc416, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  restPoint: {fileID: 0}
-  maxRandForcVal: 3000
-  startRollingForce: 1000
+  restPoint: {fileID: 321356440}
+  maxRandForcVal: 600
+  startRollingForce: 400
   rollTimeout: 5
+  resetMoveSpeed: 2.5
+  resetStopDistance: 0.02
+  resetYawToRest: 12
   diceFaceNum: 
   isLanded: 0
   firstThrow: 0
@@ -4626,10 +4660,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1919461304}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -585.2986, y: 325.61606}
-  m_SizeDelta: {x: 614.401, y: 286.828}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 574.528, y: -215.38394}
+  m_SizeDelta: {x: 1018.053, y: 286.828}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1435887180
 MonoBehaviour:
@@ -5756,10 +5790,10 @@ RectTransform:
   - {fileID: 2130717961}
   m_Father: {fileID: 1919461304}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 805.4, y: 406.4}
-  m_SizeDelta: {x: 203.00002, y: 209.027}
+  m_AnchorMin: {x: 1, y: 1}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: -152.59998, y: -134.6}
+  m_SizeDelta: {x: 203, y: 209.02698}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2008510709
 MonoBehaviour:
@@ -5833,8 +5867,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -0.000030518, y: -22}
-  m_SizeDelta: {x: 465.923, y: 95.923}
+  m_AnchoredPosition: {x: -0.000068665, y: -61}
+  m_SizeDelta: {x: 1138.557, y: 342.71}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2057985361
 MonoBehaviour:
@@ -6722,7 +6756,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1344158660}
         m_TargetAssemblyTypeName: DiceRollScript, Assembly-CSharp
-        m_MethodName: ResetDice
+        m_MethodName: ResetDicePos
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -6771,6 +6805,7 @@ SceneRoots:
   - {fileID: 1980869367}
   - {fileID: 681513220}
   - {fileID: 419671105}
+  - {fileID: 321356440}
   - {fileID: 312843564}
   - {fileID: 1919461304}
   - {fileID: 1520920703}
